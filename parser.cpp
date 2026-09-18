@@ -1,6 +1,6 @@
 #include "parser.h"
 #include <stdexcept>
-
+#include <utility>
 using namespace std;
 
 Parser::Parser(vector<Token> t) {
@@ -36,12 +36,14 @@ TokenType Parser::peekType(int offset) {
     return tokens[index].type;
 }
 
-AST* Parser::factor() {
+ASTPtr Parser::factor() {
 
     if (currentToken.type == NUMBER) {
 
-        AST* node =
-            new NumberNode(currentToken.value);
+        auto node =
+            make_unique<NumberNode>(
+                currentToken.value
+            );
 
         advance();
 
@@ -53,16 +55,13 @@ AST* Parser::factor() {
         IDENTIFIER
     ) {
 
-        if (
-            peekType()
-            == LPAREN
-        ) {
+        if (peekType() == LPAREN) {
 
             return functionCall();
         }
 
-        AST* node =
-            new VariableNode(
+        auto node =
+            make_unique<VariableNode>(
                 currentToken.value
             );
 
@@ -71,81 +70,44 @@ AST* Parser::factor() {
         return node;
     }
 
-    else if (currentToken.type == LPAREN) {
+    else if (
+        currentToken.type ==
+        LPAREN
+    ) {
 
         advance();
 
-        AST* node = comparison();
+        ASTPtr node =
+            comparison();
 
-       if (currentToken.type != RPAREN) {
+        if (
+            currentToken.type !=
+            RPAREN
+        ) {
 
-    throw runtime_error(
-        "Expected ')' after expression"
-    );
-}
+            throw runtime_error(
+                "Expected ')' after expression"
+            );
+        }
 
-advance();
-
-return node;
+        advance();
 
         return node;
     }
 
-    return nullptr;
+    throw runtime_error(
+        "Expected a number, variable or '('"
+    );
 }
 
-AST* Parser::term() {
+ASTPtr Parser::term() {
 
-    AST* node = factor();
+    ASTPtr node =
+        factor();
 
     while (
         currentToken.type == STAR ||
         currentToken.type == SLASH
-    ) {
-
-        string op = currentToken.value;
-
-        advance();
-
-        AST* right = factor();
-
-        node =
-            new BinaryOpNode(node, op, right);
-    }
-
-    return node;
-}
-
-AST* Parser::expr() {
-
-    AST* node = term();
-
-    while (
-        currentToken.type == PLUS ||
-        currentToken.type == MINUS
-    ) {
-
-        string op = currentToken.value;
-
-        advance();
-
-        AST* right = term();
-
-        node =
-            new BinaryOpNode(node, op, right);
-    }
-
-    return node;
-}
-
-AST* Parser::comparison() {
-
-    AST* node = expr();
-
-    while (
-        currentToken.type == GREATER ||
-        currentToken.type == LESS ||
-        currentToken.type == EQUAL_EQUAL
     ) {
 
         string op =
@@ -153,88 +115,174 @@ AST* Parser::comparison() {
 
         advance();
 
-        AST* right = expr();
+        ASTPtr right =
+            factor();
 
-        node = new CompareNode(
-            node,
-            op,
-            right
-        );
+        node =
+            make_unique<BinaryOpNode>(
+                move(node),
+                move(op),
+                move(right)
+            );
     }
 
     return node;
 }
 
-AST* Parser::ifStatement() {
+ASTPtr Parser::expr() {
+
+    ASTPtr node =
+        term();
+
+    while (
+        currentToken.type == PLUS ||
+        currentToken.type == MINUS
+    ) {
+
+        string op =
+            currentToken.value;
+
+        advance();
+
+        ASTPtr right =
+            term();
+
+        node =
+            make_unique<BinaryOpNode>(
+                move(node),
+                move(op),
+                move(right)
+            );
+    }
+
+    return node;
+}
+
+ASTPtr Parser::comparison() {
+
+    ASTPtr node =
+        expr();
+
+    while (
+        currentToken.type == GREATER ||
+        currentToken.type == LESS ||
+        currentToken.type ==
+            EQUAL_EQUAL
+    ) {
+
+        string op =
+            currentToken.value;
+
+        advance();
+
+        ASTPtr right =
+            expr();
+
+        node =
+            make_unique<CompareNode>(
+                move(node),
+                move(op),
+                move(right)
+            );
+    }
+
+    return node;
+}
+
+ASTPtr Parser::ifStatement() {
 
     advance();
 
-    AST* condition =
+    ASTPtr condition =
         comparison();
 
-    if (currentToken.type == LBRACE) {
+    if (
+        currentToken.type !=
+        LBRACE
+    ) {
 
-        advance();
+        throw runtime_error(
+            "Expected '{' after if condition"
+        );
     }
 
-    vector<AST*> ifBody;
+    advance();
+
+    vector<ASTPtr> ifBody;
 
     while (
-    currentToken.type != RBRACE &&
-    currentToken.type != EOF_TOKEN    ) {
+        currentToken.type != RBRACE &&
+        currentToken.type != EOF_TOKEN
+    ) {
 
         ifBody.push_back(
             statement()
         );
     }
 
-if (currentToken.type == EOF_TOKEN) {
+    if (
+        currentToken.type ==
+        EOF_TOKEN
+    ) {
 
-    throw runtime_error(
-        "Expected '}' before end of input"
-    );
-}
+        throw runtime_error(
+            "Expected '}' after if body"
+        );
+    }
 
     advance();
 
-    vector<AST*> elseBody;
+    vector<ASTPtr> elseBody;
 
-    if (currentToken.type == ELSE) {
+    if (
+        currentToken.type == ELSE
+    ) {
 
         advance();
 
-        if (currentToken.type == LBRACE) {
+        if (
+            currentToken.type !=
+            LBRACE
+        ) {
 
-            advance();
+            throw runtime_error(
+                "Expected '{' after else"
+            );
         }
 
+        advance();
+
         while (
-        currentToken.type != RBRACE &&
-    currentToken.type != EOF_TOKEN        ) {
+            currentToken.type != RBRACE &&
+            currentToken.type != EOF_TOKEN
+        ) {
 
             elseBody.push_back(
                 statement()
             );
         }
 
-            if (currentToken.type == EOF_TOKEN) {
+        if (
+            currentToken.type ==
+            EOF_TOKEN
+        ) {
 
-    throw runtime_error(
-        "Expected '}' before end of input"
-    );
-
-}
+            throw runtime_error(
+                "Expected '}' after else body"
+            );
+        }
 
         advance();
     }
 
-    return new IfNode(
-        condition,
-        ifBody,
-        elseBody
+    return make_unique<IfNode>(
+        move(condition),
+        move(ifBody),
+        move(elseBody)
     );
 }
-AST* Parser::statement() {
+
+ASTPtr Parser::statement() {
 
     if (currentToken.type == FUNC) {
 
@@ -252,45 +300,53 @@ AST* Parser::statement() {
     }
 
     if (
-        currentToken.type == IDENTIFIER &&
+        currentToken.type ==
+            IDENTIFIER &&
         peekType() == EQUAL
     ) {
 
-        string name = currentToken.value;
+        string name =
+            currentToken.value;
 
         advance();
-
         advance();
 
-        AST* value =
+        ASTPtr value =
             comparison();
 
-        return new AssignNode(
-            name,
-            value
+        return make_unique<AssignNode>(
+            move(name),
+            move(value)
         );
     }
 
     return comparison();
 }
 
-AST* Parser::whileStatement() {
+ASTPtr Parser::whileStatement() {
 
     advance();
 
-    AST* condition =
+    ASTPtr condition =
         comparison();
 
-    if (currentToken.type == LBRACE) {
+    if (
+        currentToken.type !=
+        LBRACE
+    ) {
 
-        advance();
+        throw runtime_error(
+            "Expected '{' after while condition"
+        );
     }
 
-    vector<AST*> body;
+    advance();
+
+    vector<ASTPtr> body;
 
     while (
-            currentToken.type != RBRACE &&
-    currentToken.type != EOF_TOKEN
+        currentToken.type != RBRACE &&
+        currentToken.type != EOF_TOKEN
     ) {
 
         body.push_back(
@@ -298,28 +354,31 @@ AST* Parser::whileStatement() {
         );
     }
 
-        if (currentToken.type == EOF_TOKEN) {
+    if (
+        currentToken.type ==
+        EOF_TOKEN
+    ) {
 
-    throw runtime_error(
-        "Expected '}' before end of input"
-    );
-
-}
+        throw runtime_error(
+            "Expected '}' after while body"
+        );
+    }
 
     advance();
 
-    return new WhileNode(
-        condition,
-        body
+    return make_unique<WhileNode>(
+        move(condition),
+        move(body)
     );
 }
 
-AST* Parser::program() {
+ASTPtr Parser::program() {
 
-    vector<AST*> statements;
+    vector<ASTPtr> statements;
 
     while (
-        currentToken.type != EOF_TOKEN
+        currentToken.type !=
+        EOF_TOKEN
     ) {
 
         statements.push_back(
@@ -327,25 +386,58 @@ AST* Parser::program() {
         );
     }
 
-    return new ProgramNode(statements);
+    return make_unique<ProgramNode>(
+        move(statements)
+    );
 }
 
-AST* Parser::functionDefinition() {
+ASTPtr Parser::functionDefinition() {
 
     advance();
+
+    if (
+        currentToken.type !=
+        IDENTIFIER
+    ) {
+
+        throw runtime_error(
+            "Expected function name"
+        );
+    }
 
     string name =
         currentToken.value;
 
     advance();
 
+    if (
+        currentToken.type !=
+        LPAREN
+    ) {
+
+        throw runtime_error(
+            "Expected '(' after function name"
+        );
+    }
+
     advance();
 
     vector<string> params;
 
     while (
-        currentToken.type != RPAREN
+        currentToken.type != RPAREN &&
+        currentToken.type != EOF_TOKEN
     ) {
+
+        if (
+            currentToken.type !=
+            IDENTIFIER
+        ) {
+
+            throw runtime_error(
+                "Expected parameter name"
+            );
+        }
 
         params.push_back(
             currentToken.value
@@ -359,57 +451,98 @@ AST* Parser::functionDefinition() {
 
             advance();
         }
+
+        else if (
+            currentToken.type !=
+            RPAREN
+        ) {
+
+            throw runtime_error(
+                "Expected ',' or ')' after parameter"
+            );
+        }
+    }
+
+    if (
+        currentToken.type ==
+        EOF_TOKEN
+    ) {
+
+        throw runtime_error(
+            "Expected ')' after parameters"
+        );
     }
 
     advance();
 
     if (
-        currentToken.type == LBRACE
+        currentToken.type !=
+        LBRACE
     ) {
 
-        advance();
+        throw runtime_error(
+            "Expected '{' before function body"
+        );
     }
 
-    vector<AST*> body;
+    advance();
+
+    vector<ASTPtr> body;
 
     while (
-    currentToken.type != RBRACE &&
-    currentToken.type != EOF_TOKEN    ) {
+        currentToken.type != RBRACE &&
+        currentToken.type != EOF_TOKEN
+    ) {
 
         body.push_back(
             statement()
         );
     }
 
-    if (currentToken.type == EOF_TOKEN) {
+    if (
+        currentToken.type ==
+        EOF_TOKEN
+    ) {
 
-    throw runtime_error(
-        "Expected '}' before end of input"
-    );
-}
+        throw runtime_error(
+            "Expected '}' after function body"
+        );
+    }
 
     advance();
 
-    return new FunctionDefNode(
-        name,
-        params,
-        body
+    return make_unique<FunctionDefNode>(
+        move(name),
+        move(params),
+        move(body)
     );
 }
 
-AST* Parser::functionCall() {
+
+ASTPtr Parser::functionCall() {
 
     string name =
         currentToken.value;
 
     advance();
 
+    if (
+        currentToken.type !=
+        LPAREN
+    ) {
+
+        throw runtime_error(
+            "Expected '(' after function name"
+        );
+    }
+
     advance();
 
-    vector<AST*> args;
+    vector<ASTPtr> args;
 
     while (
-        currentToken.type != RPAREN
+        currentToken.type != RPAREN &&
+        currentToken.type != EOF_TOKEN
     ) {
 
         args.push_back(
@@ -422,18 +555,37 @@ AST* Parser::functionCall() {
 
             advance();
         }
+
+        else if (
+            currentToken.type !=
+            RPAREN
+        ) {
+
+            throw runtime_error(
+                "Expected ',' or ')' after argument"
+            );
+        }
+    }
+
+    if (
+        currentToken.type ==
+        EOF_TOKEN
+    ) {
+
+        throw runtime_error(
+            "Expected ')' after arguments"
+        );
     }
 
     advance();
 
-    return new FunctionCallNode(
-        name,
-        args
+    return make_unique<FunctionCallNode>(
+        move(name),
+        move(args)
     );
 }
 
-
-AST* Parser::parse() {
+ASTPtr Parser::parse() {
 
     return program();
 }
