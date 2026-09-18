@@ -2,45 +2,48 @@
 
 #include "token.h"
 #include "ast.h"
+
+#include <cstddef>
 #include <vector>
 
 using namespace std;
 
 class Parser {
-
 public:
 
     vector<Token> tokens;
 
-    int pos;
+    size_t pos;
 
     Token currentToken;
-
-    TokenType peekType(int offset = 1);
 
     Parser(vector<Token> t);
 
     void advance();
 
-    AST* parse();
+    TokenType peekType(
+        size_t offset = 1
+    );
 
-    AST* expr();
+    ASTPtr parse();
 
-    AST* term();
+    ASTPtr expr();
 
-    AST* factor();
+    ASTPtr term();
 
-    AST* statement();
+    ASTPtr factor();
 
-    AST* program();
+    ASTPtr statement();
 
-    AST* ifStatement();
+    ASTPtr program();
 
-    AST* comparison();
+    ASTPtr ifStatement();
 
-    AST* whileStatement();
+    ASTPtr comparison();
 
-    AST* functionDefinition();
+    ASTPtr whileStatement();
 
-AST* functionCall();
+    ASTPtr functionDefinition();
+
+    ASTPtr functionCall();
 };
