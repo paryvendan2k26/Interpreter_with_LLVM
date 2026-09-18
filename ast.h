@@ -32,6 +32,12 @@ public:
         op = o;
         right = r;
     }
+
+    ~BinaryOpNode() override {
+
+    delete left;
+    delete right;
+}
 };
 
 class VariableNode : public AST {
@@ -59,6 +65,11 @@ public:
 
         value = v;
     }
+
+        ~AssignNode() override {
+
+        delete value;
+    }
 };
 
 
@@ -72,6 +83,14 @@ public:
 
         statements = stmts;
     }
+
+    ~ProgramNode() override {
+
+    for (AST* statement : statements) {
+
+        delete statement;
+    }
+}
 };
 
 class IfNode : public AST {
@@ -96,6 +115,21 @@ public:
 
         elseBody = elseStmts;
     }
+
+    ~IfNode() override {
+
+    delete condition;
+
+    for (AST* statement : ifBody) {
+
+        delete statement;
+    }
+
+    for (AST* statement : elseBody) {
+
+        delete statement;
+    }
+}
 };
 
 
@@ -121,6 +155,12 @@ public:
 
         right = r;
     }
+
+    ~CompareNode() override {
+
+    delete left;
+    delete right;
+}
 };
 
 class WhileNode : public AST {
@@ -140,6 +180,16 @@ public:
 
         body = stmts;
     }
+
+    ~WhileNode() override {
+
+    delete condition;
+
+    for (AST* statement : body) {
+
+        delete statement;
+    }
+}
 };
 
 class FunctionDefNode : public AST {
@@ -164,6 +214,14 @@ public:
 
         body = b;
     }
+
+    ~FunctionDefNode() override {
+
+    for (AST* statement : body) {
+
+        delete statement;
+    }
+}
 };
 
 class FunctionCallNode : public AST {
@@ -183,4 +241,12 @@ public:
 
         args = a;
     }
+
+    ~FunctionCallNode() override {
+
+    for (AST* argument : args) {
+
+        delete argument;
+    }
+}
 };
