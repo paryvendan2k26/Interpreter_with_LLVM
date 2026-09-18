@@ -1,14 +1,18 @@
 #include <iostream>
+#include <memory>
+#include <vector>
+
 #include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
-#include <exception>
 
 using namespace std;
 
 int main() {
 
     Interpreter interpreter;
+
+    vector<unique_ptr<AST>> trees;
 
     while (true) {
 
@@ -18,44 +22,43 @@ int main() {
 
         getline(cin, input);
 
-        if (
-            input == "exit"
-        ) {
-
+        if (input == "exit") {
             break;
         }
 
         if (input.empty()) {
-    continue;
-}
+            continue;
+        }
 
-try {
+        try {
 
-    Lexer lexer(input);
+            Lexer lexer(input);
 
-    vector<Token> tokens =
-        lexer.tokenize();
+            vector<Token> tokens =
+                lexer.tokenize();
 
-    Parser parser(tokens);
+            Parser parser(tokens);
 
-    AST* tree =
-        parser.parse();
+            trees.emplace_back(
+                parser.parse()
+            );
 
-    int result =
-        interpreter.visit(tree);
+            AST* tree =
+                trees.back().get();
 
-    cout
-        << result
-        << endl;
-}
+            int result =
+                interpreter.visit(tree);
 
-catch (const exception& error) {
+            cout << result << endl;
+        }
 
-    cerr
-        << "Error: "
-        << error.what()
-        << endl;
-}
+        catch (const exception& error) {
+
+            cerr
+                << "Error: "
+                << error.what()
+                << endl;
+        }
     }
 
     return 0;

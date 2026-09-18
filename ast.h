@@ -9,6 +9,15 @@ using namespace std;
 
 class AST {
 public:
+
+    AST() = default;
+
+    AST(const AST&) = delete;
+
+    AST& operator=(
+        const AST&
+    ) = delete;
+
     virtual ~AST() {}
 };
 
