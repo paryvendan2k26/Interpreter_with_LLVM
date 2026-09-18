@@ -1,9 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <string>
-
+#include <utility>
 #include <vector>
-
 
 using namespace std;
 
@@ -18,244 +18,176 @@ public:
         const AST&
     ) = delete;
 
-    virtual ~AST() {}
+    virtual ~AST() = default;
 };
+
+using ASTPtr = unique_ptr<AST>;
+
 
 class NumberNode : public AST {
 public:
+
     string value;
 
-    NumberNode(string val) {
-        value = val;
+    NumberNode(string val)
+        : value(move(val))
+    {
     }
 };
+
 
 class BinaryOpNode : public AST {
 public:
-    AST* left;
+
+    ASTPtr left;
     string op;
-    AST* right;
+    ASTPtr right;
 
-    BinaryOpNode(AST* l, string o, AST* r) {
-        left = l;
-        op = o;
-        right = r;
+    BinaryOpNode(
+        ASTPtr l,
+        string o,
+        ASTPtr r
+    ) :
+        left(move(l)),
+        op(move(o)),
+        right(move(r))
+    {
     }
-
-    ~BinaryOpNode() override {
-
-    delete left;
-    delete right;
-}
 };
+
 
 class VariableNode : public AST {
-
 public:
 
     string name;
 
-    VariableNode(string n) {
-        name = n;
+    VariableNode(string n)
+        : name(move(n))
+    {
     }
 };
 
-class AssignNode : public AST {
 
+class AssignNode : public AST {
 public:
 
     string name;
+    ASTPtr value;
 
-    AST* value;
-
-    AssignNode(string n, AST* v) {
-
-        name = n;
-
-        value = v;
-    }
-
-        ~AssignNode() override {
-
-        delete value;
+    AssignNode(
+        string n,
+        ASTPtr v
+    ) :
+        name(move(n)),
+        value(move(v))
+    {
     }
 };
 
 
 class ProgramNode : public AST {
-
 public:
 
-    vector<AST*> statements;
+    vector<ASTPtr> statements;
 
-    ProgramNode(vector<AST*> stmts) {
-
-        statements = stmts;
+    ProgramNode(
+        vector<ASTPtr> stmts
+    ) :
+        statements(move(stmts))
+    {
     }
-
-    ~ProgramNode() override {
-
-    for (AST* statement : statements) {
-
-        delete statement;
-    }
-}
 };
 
-class IfNode : public AST {
 
+class IfNode : public AST {
 public:
 
-    AST* condition;
-
-    vector<AST*> ifBody;
-
-    vector<AST*> elseBody;
+    ASTPtr condition;
+    vector<ASTPtr> ifBody;
+    vector<ASTPtr> elseBody;
 
     IfNode(
-        AST* cond,
-        vector<AST*> ifStmts,
-        vector<AST*> elseStmts
-    ) {
-
-        condition = cond;
-
-        ifBody = ifStmts;
-
-        elseBody = elseStmts;
+        ASTPtr cond,
+        vector<ASTPtr> ifStmts,
+        vector<ASTPtr> elseStmts
+    ) :
+        condition(move(cond)),
+        ifBody(move(ifStmts)),
+        elseBody(move(elseStmts))
+    {
     }
-
-    ~IfNode() override {
-
-    delete condition;
-
-    for (AST* statement : ifBody) {
-
-        delete statement;
-    }
-
-    for (AST* statement : elseBody) {
-
-        delete statement;
-    }
-}
 };
 
 
 class CompareNode : public AST {
-
 public:
 
-    AST* left;
-
+    ASTPtr left;
     string op;
-
-    AST* right;
+    ASTPtr right;
 
     CompareNode(
-        AST* l,
+        ASTPtr l,
         string o,
-        AST* r
-    ) {
-
-        left = l;
-
-        op = o;
-
-        right = r;
+        ASTPtr r
+    ) :
+        left(move(l)),
+        op(move(o)),
+        right(move(r))
+    {
     }
-
-    ~CompareNode() override {
-
-    delete left;
-    delete right;
-}
 };
+
 
 class WhileNode : public AST {
-
 public:
 
-    AST* condition;
-
-    vector<AST*> body;
+    ASTPtr condition;
+    vector<ASTPtr> body;
 
     WhileNode(
-        AST* cond,
-        vector<AST*> stmts
-    ) {
-
-        condition = cond;
-
-        body = stmts;
+        ASTPtr cond,
+        vector<ASTPtr> stmts
+    ) :
+        condition(move(cond)),
+        body(move(stmts))
+    {
     }
-
-    ~WhileNode() override {
-
-    delete condition;
-
-    for (AST* statement : body) {
-
-        delete statement;
-    }
-}
 };
 
-class FunctionDefNode : public AST {
 
+class FunctionDefNode : public AST {
 public:
 
     string name;
-
     vector<string> params;
-
-    vector<AST*> body;
+    vector<ASTPtr> body;
 
     FunctionDefNode(
         string n,
         vector<string> p,
-        vector<AST*> b
-    ) {
-
-        name = n;
-
-        params = p;
-
-        body = b;
+        vector<ASTPtr> b
+    ) :
+        name(move(n)),
+        params(move(p)),
+        body(move(b))
+    {
     }
-
-    ~FunctionDefNode() override {
-
-    for (AST* statement : body) {
-
-        delete statement;
-    }
-}
 };
 
-class FunctionCallNode : public AST {
 
+class FunctionCallNode : public AST {
 public:
 
     string name;
-
-    vector<AST*> args;
+    vector<ASTPtr> args;
 
     FunctionCallNode(
         string n,
-        vector<AST*> a
-    ) {
-
-        name = n;
-
-        args = a;
+        vector<ASTPtr> a
+    ) :
+        name(move(n)),
+        args(move(a))
+    {
     }
-
-    ~FunctionCallNode() override {
-
-    for (AST* argument : args) {
-
-        delete argument;
-    }
-}
 };
