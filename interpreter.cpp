@@ -10,9 +10,11 @@ int Interpreter::visitNumberNode(NumberNode* node) {
 
 int Interpreter::visitBinaryOpNode(BinaryOpNode* node) {
 
-    int left = visit(node->left);
+    int left =
+    visit(node->left.get());
 
-    int right = visit(node->right);
+int right =
+    visit(node->right.get());
 
     if (node->op == "+") {
         return left + right;
@@ -63,7 +65,8 @@ int Interpreter::visitAssignNode(
     AssignNode* node
 ) {
 
-    int value = visit(node->value);
+    int value =
+    visit(node->value.get());
 
     variables[node->name] = value;
 
@@ -165,10 +168,14 @@ int Interpreter::visitProgramNode(
 
     int result = 0;
 
-    for (AST* stmt : node->statements) {
+    for (
+    const ASTPtr& stmt :
+    node->statements
+) {
 
-        result = visit(stmt);
-    }
+    result =
+        visit(stmt.get());
+}
 
     return result;
 }
@@ -177,25 +184,33 @@ int Interpreter::visitIfNode(
     IfNode* node
 ) {
 
-    int cond =
-        visit(node->condition);
+    int cond =  
+    visit(node->condition.get());
 
     int result = 0;
 
     if (cond) {
 
-        for (AST* stmt : node->ifBody) {
+        for (
+    const ASTPtr& stmt :
+    node->ifBody
+) {
 
-            result = visit(stmt);
-        }
+    result =
+        visit(stmt.get());
+}
     }
 
     else {
 
-        for (AST* stmt : node->elseBody) {
+        for (
+    const ASTPtr& stmt :
+    node->elseBody
+) {
 
-            result = visit(stmt);
-        }
+    result =
+        visit(stmt.get());
+}
     }
 
     return result;
@@ -205,11 +220,11 @@ int Interpreter::visitCompareNode(
     CompareNode* node
 ) {
 
-    int left =
-        visit(node->left);
+int left =
+    visit(node->left.get());
 
-    int right =
-        visit(node->right);
+int right =
+    visit(node->right.get());
 
     if (node->op == ">") {
         return left > right;
@@ -234,13 +249,17 @@ int Interpreter::visitWhileNode(
     int result = 0;
 
     while (
-        visit(node->condition)
-    ) {
+    visit(node->condition.get())
+) {
 
-        for (AST* stmt : node->body) {
+       for (
+    const ASTPtr& stmt :
+    node->body
+) {
 
-            result = visit(stmt);
-        }
+    result =
+        visit(stmt.get());
+}
     }
 
     return result;
@@ -289,33 +308,56 @@ FunctionDefNode* func =
         );
     }
 
-    map<string, int> oldVariables =
-        variables;
+    vector<int> argumentValues;
+
+for (
+    const ASTPtr& argument :
+    node->args
+) {
+
+    argumentValues.push_back(
+        visit(argument.get())
+    );
+}
+
+map<string, int> oldVariables =
+    variables;
+
+for (
+    size_t i = 0;
+    i < func->params.size();
+    i++
+) {
+
+    variables[
+        func->params[i]
+    ] = argumentValues[i];
+}
+
+int result = 0;
+
+try {
 
     for (
-        int i = 0;
-        i < func->params.size();
-        i++
+        const ASTPtr& stmt :
+        func->body
     ) {
 
-        int value =
-            visit(node->args[i]);
-
-        variables[
-            func->params[i]
-        ] = value;
+        result =
+            visit(stmt.get());
     }
+}
 
-    int result = 0;
-
-    for (AST* stmt : func->body) {
-
-        result = visit(stmt);
-    }
+catch (...) {
 
     variables = oldVariables;
 
-    return result;
+    throw;
+}
+
+variables = oldVariables;
+
+return result;
 }
 
 

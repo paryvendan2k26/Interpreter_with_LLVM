@@ -1,3 +1,4 @@
+#include <exception>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -12,7 +13,7 @@ int main() {
 
     Interpreter interpreter;
 
-    vector<unique_ptr<AST>> trees;
+    vector<ASTPtr> trees;
 
     while (true) {
 
@@ -22,11 +23,15 @@ int main() {
 
         getline(cin, input);
 
-        if (input == "exit") {
+        if (
+            input == "exit"
+        ) {
+
             break;
         }
 
         if (input.empty()) {
+
             continue;
         }
 
@@ -39,7 +44,7 @@ int main() {
 
             Parser parser(tokens);
 
-            trees.emplace_back(
+            trees.push_back(
                 parser.parse()
             );
 
@@ -49,10 +54,14 @@ int main() {
             int result =
                 interpreter.visit(tree);
 
-            cout << result << endl;
+            cout
+                << result
+                << endl;
         }
 
-        catch (const exception& error) {
+        catch (
+            const exception& error
+        ) {
 
             cerr
                 << "Error: "

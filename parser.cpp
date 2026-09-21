@@ -1,6 +1,7 @@
 #include "parser.h"
 #include <stdexcept>
 #include <utility>
+
 using namespace std;
 
 Parser::Parser(vector<Token> t) {
@@ -22,14 +23,15 @@ void Parser::advance() {
     }
 }
 
-TokenType Parser::peekType(int offset) {
+TokenType Parser::peekType(
+    size_t offset
+) {
 
-    int index = pos + offset;
+    size_t index =
+        pos + offset;
 
-    if (
-        index < 0 ||
-        index >= tokens.size()
-    ) {
+    if (index >= tokens.size()) {
+
         return EOF_TOKEN;
     }
 
