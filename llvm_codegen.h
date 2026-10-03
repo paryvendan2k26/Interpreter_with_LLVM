@@ -22,6 +22,18 @@ private:
         AST* node
     );
 
+    llvm::Value* generateNumber(
+        NumberNode* node
+    );
+
+    llvm::Value* generateBinaryOp(
+        BinaryOpNode* node
+    );
+
+    llvm::Value* generateProgram(
+        ProgramNode* node
+    );
+
 public:
 
     LLVMCodeGenerator();

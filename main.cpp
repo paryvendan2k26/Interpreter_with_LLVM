@@ -6,6 +6,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "interpreter.h"
+#include "llvm_codegen.h"
 
 using namespace std;
 
@@ -51,12 +52,11 @@ int main() {
             AST* tree =
                 trees.back().get();
 
-            int result =
-                interpreter.visit(tree);
+LLVMCodeGenerator codeGenerator;
 
-            cout
-                << result
-                << endl;
+codeGenerator.generate(tree);
+
+codeGenerator.printIR();
         }
 
         catch (
